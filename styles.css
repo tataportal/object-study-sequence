@@ -64,6 +64,9 @@ body {
 
 .art-card {
   --bloom: 0.12;
+  --frame-fit: cover;
+  --frame-scale: 1.002;
+  --glow-scale: 1.05;
   --motion-blur: 0px;
   --motion-shift: 0px;
   position: absolute;
@@ -87,35 +90,41 @@ body {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: var(--frame-fit);
   pointer-events: none;
 }
 
 .sequence-frame {
   z-index: 2;
   filter: blur(var(--motion-blur));
-  transform: translateX(var(--motion-shift)) scale(1.002);
+  transform: translateX(var(--motion-shift)) scale(var(--frame-scale));
 }
 
 .sequence-glow {
   z-index: 1;
   opacity: var(--bloom);
   filter: blur(18px) saturate(1.1) brightness(1.35);
-  transform: scale(1.05);
+  transform: scale(var(--glow-scale));
   mix-blend-mode: screen;
 }
 
-.artwork[data-artwork="1"] .sequence-frame,
-.artwork[data-artwork="1"] .sequence-glow,
-.artwork[data-artwork="2"] .sequence-frame,
-.artwork[data-artwork="2"] .sequence-glow {
-  object-fit: contain;
+.artwork[data-artwork="1"] .art-card {
+  --frame-fit: contain;
+  --glow-scale: 1.02;
+}
+
+.artwork[data-artwork="2"] .art-card {
+  --frame-fit: contain;
+  --frame-scale: 1.28;
+  --glow-scale: 1.3;
 }
 
 @media (orientation: landscape), (min-width: 760px) {
-  .sequence-frame,
-  .sequence-glow {
-    object-fit: contain;
+  .art-card,
+  .artwork[data-artwork="2"] .art-card {
+    --frame-fit: contain;
+    --frame-scale: 1;
+    --glow-scale: 1.02;
   }
 }
 
