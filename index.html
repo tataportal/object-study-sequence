@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Object Study</title>
-    <link rel="stylesheet" href="./styles.css?v=intro-screen-1" />
+    <link rel="stylesheet" href="./styles.css?v=project-4-exr" />
+    <link rel="stylesheet" href="./three-envmap.css?v=project-4-exr" />
   </head>
   <body>
     <main class="experience" id="experience" aria-label="Interactive 3D art sequence">
@@ -43,8 +44,24 @@
         </div>
         <p class="caption">Concept 6, pressure held in motion.</p>
       </section>
+
+      <section class="artwork" data-artwork="3">
+        <div class="art-card three-card">
+          <div class="three-stage" id="three-stage"></div>
+        </div>
+        <p class="caption">EXR object study, lit beyond the room.</p>
+      </section>
     </main>
 
-    <script defer src="./src/main.js?v=intro-screen-1"></script>
+    <script defer src="./src/main.js?v=project-4-exr"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="./src/three-envmap.js?v=project-4-exr"></script>
   </body>
 </html>

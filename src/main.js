@@ -4,6 +4,7 @@ const sequences = [
   { dir: "001_face_jpg", count: 120, mode: "loop", interaction: "drag" },
   { dir: "002_habit_jpg", count: 120, mode: "bounce", interaction: "drag" },
   { dir: "003_concept6_jpg", count: 72, mode: "bounce", interaction: "pinch" },
+  null,
 ];
 
 const experience = document.querySelector("#experience");
@@ -13,7 +14,7 @@ const artworks = [...document.querySelectorAll(".artwork")].map((node, index) =>
   card: node.querySelector(".art-card"),
   image: node.querySelector(".sequence-frame"),
   glow: node.querySelector(".sequence-glow"),
-  sequence: sequences[index] || sequences[0],
+  sequence: index in sequences ? sequences[index] : sequences[0],
   frame: 0,
   velocity: 0,
 }));
@@ -38,6 +39,8 @@ function framePath(sequence, frame) {
 }
 
 function normalizeFrame(artwork) {
+  if (!artwork.sequence) return;
+
   const { count, mode } = artwork.sequence;
   const max = count - 1;
 
@@ -66,6 +69,8 @@ function normalizeFrame(artwork) {
 }
 
 function renderArtwork(artwork) {
+  if (!artwork.sequence || !artwork.image || !artwork.glow) return;
+
   normalizeFrame(artwork);
   const index = Math.max(0, Math.min(artwork.sequence.count - 1, Math.round(artwork.frame)));
   const src = framePath(artwork.sequence, index);
@@ -74,6 +79,8 @@ function renderArtwork(artwork) {
 }
 
 function applyPost(artwork) {
+  if (!artwork.sequence) return;
+
   const speed = Math.min(Math.abs(artwork.velocity) / 18, 1);
   const shift = Math.max(-5, Math.min(5, artwork.velocity * 0.18));
   artwork.card.style.setProperty("--bloom", String(0.1 + speed * 0.18));
@@ -82,6 +89,8 @@ function applyPost(artwork) {
 }
 
 function applyFrameInput(artwork, frameDelta, velocity) {
+  if (!artwork.sequence) return;
+
   if (artwork.sequence.mode !== "bounce") {
     artwork.frame += frameDelta;
     artwork.velocity = velocity;
@@ -124,6 +133,7 @@ function activeCardPointers(artwork) {
 }
 
 function startPinchIfReady(artwork) {
+  if (!artwork.sequence) return false;
   if (artwork.sequence.interaction !== "pinch") return false;
 
   const cardPointers = activeCardPointers(artwork);
@@ -147,6 +157,8 @@ function startPinchIfReady(artwork) {
 }
 
 function jumpToClockFrame(artwork, clientX, clientY) {
+  if (!artwork.sequence) return;
+
   const rect = artwork.card.getBoundingClientRect();
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
@@ -226,6 +238,8 @@ function previewVerticalDrag(totalY) {
 
 function preloadFrames() {
   sequences.forEach((sequence) => {
+    if (!sequence) return;
+
     Array.from({ length: sequence.count }, (_, index) => {
       const image = new Image();
       image.src = framePath(sequence, index);
@@ -236,6 +250,8 @@ function preloadFrames() {
 
 function onPointerDown(event) {
   const artwork = getActiveArtwork();
+
+  if (artwork && !artwork.sequence && event.target.closest(".three-stage")) return;
 
   experience.setPointerCapture(event.pointerId);
   activePointers.set(event.pointerId, {
@@ -303,6 +319,7 @@ function onPointerMove(event) {
 
   if (
     artwork &&
+    artwork.sequence &&
     pointer.mode === "horizontal" &&
     pointer.horizontalAllowed &&
     artwork.sequence.interaction !== "pinch"
@@ -341,8 +358,9 @@ function onPointerUp(event) {
     setActiveArtwork(totalY > 0 ? activeIndex + 1 : activeIndex - 1);
   } else if (
     getActiveArtwork() &&
+    getActiveArtwork().sequence &&
     pointer.horizontalAllowed &&
-    artworks[activeIndex].sequence.interaction !== "pinch" &&
+    getActiveArtwork().sequence.interaction !== "pinch" &&
     Math.hypot(totalX, totalY) < 10 &&
     pointer.mode !== "horizontal" &&
     pointer.mode !== "vertical"
@@ -358,7 +376,7 @@ function onPointerUp(event) {
 
 function animate() {
   const artwork = getActiveArtwork();
-  if (!artwork) {
+  if (!artwork || !artwork.sequence) {
     requestAnimationFrame(animate);
     return;
   }

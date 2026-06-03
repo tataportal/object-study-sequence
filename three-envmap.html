@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EXR Object Study</title>
+    <link rel="stylesheet" href="./three-envmap.css?v=exr-setup-1" />
+  </head>
+  <body>
+    <main id="stage" aria-label="EXR-lit 3D object viewer"></main>
+    <p class="label">EXR environment study. Drag to orbit.</p>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="./src/three-envmap.js?v=exr-setup-1"></script>
+  </body>
+</html>
