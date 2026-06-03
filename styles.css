@@ -112,6 +112,13 @@ body {
   object-fit: contain;
 }
 
+@media (orientation: landscape), (min-width: 760px) {
+  .sequence-frame,
+  .sequence-glow {
+    object-fit: contain;
+  }
+}
+
 .caption {
   position: absolute;
   left: clamp(18px, 5vw, 56px);
