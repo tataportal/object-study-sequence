@@ -30,13 +30,16 @@ scene.add(keyLight);
 const camera = new THREE.PerspectiveCamera(40, stage.clientWidth / stage.clientHeight, 1, 1000);
 camera.position.set(0, 0, 120);
 
+const torusGeometry = new THREE.TorusKnotGeometry(18, 8, 420, 56);
+torusGeometry.computeVertexNormals();
+
 const torusMesh = new THREE.Mesh(
-  new THREE.TorusKnotGeometry(18, 8, 150, 20),
+  torusGeometry,
   new THREE.MeshStandardMaterial({
     color: 0xffffff,
     metalness: 0,
-    roughness: 0,
-    envMapIntensity: 1,
+    roughness: 0.04,
+    envMapIntensity: 1.15,
   }),
 );
 scene.add(torusMesh);
