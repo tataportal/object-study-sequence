@@ -39,11 +39,6 @@ body {
   --feed-opacity: 0;
   position: absolute;
   inset: 0;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  align-items: center;
-  justify-items: center;
-  padding: clamp(18px, 4vh, 40px) clamp(18px, 5vw, 52px) clamp(24px, 5vh, 48px);
   opacity: var(--feed-opacity);
   pointer-events: none;
   transform: translateY(var(--feed-y)) scale(var(--feed-scale));
@@ -71,15 +66,12 @@ body {
   --bloom: 0.12;
   --motion-blur: 0px;
   --motion-shift: 0px;
-  width: min(86vw, calc((100dvh - 112px) * 0.75), 520px);
-  aspect-ratio: 3 / 4;
-  position: relative;
-  border-radius: clamp(22px, 5vw, 42px);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-  background: #050505;
-  box-shadow:
-    0 30px 90px rgba(0, 0, 0, 0.72),
-    0 0 0 1px rgba(255, 255, 255, 0.06);
+  background: #000;
   cursor: grab;
   transform: translateZ(0);
 }
@@ -114,24 +106,20 @@ body {
 }
 
 .caption {
-  width: min(86vw, 520px);
-  margin: 16px 0 0;
-  color: rgba(255, 255, 255, 0.66);
+  position: absolute;
+  left: clamp(18px, 5vw, 56px);
+  right: clamp(18px, 5vw, 56px);
+  bottom: calc(clamp(18px, 5vw, 56px) + env(safe-area-inset-bottom));
+  z-index: 3;
+  width: min(78vw, 520px);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(0.82rem, 2.6vw, 0.98rem);
   font-style: italic;
   line-height: 1.35;
   letter-spacing: 0;
   text-align: left;
-}
-
-@media (min-width: 760px) {
-  .artwork {
-    padding-top: 42px;
-    padding-bottom: 42px;
-  }
-
-  .caption {
-    margin-top: 18px;
-  }
+  pointer-events: none;
+  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.72);
 }
