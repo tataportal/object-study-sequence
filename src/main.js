@@ -30,8 +30,8 @@ function getActiveArtwork() {
   return artworks[activeIndex - 1] || null;
 }
 
-function normalizeSlideIndex(index) {
-  return ((index % slides.length) + slides.length) % slides.length;
+function clampSlideIndex(index) {
+  return Math.max(0, Math.min(slides.length - 1, index));
 }
 
 function framePath(sequence, frame) {
@@ -177,7 +177,7 @@ function jumpToClockFrame(artwork, clientX, clientY) {
 }
 
 function setActiveArtwork(nextIndex) {
-  activeIndex = normalizeSlideIndex(nextIndex);
+  activeIndex = clampSlideIndex(nextIndex);
   verticalDrag = 0;
   intro.classList.toggle("is-active", activeIndex === 0);
   intro.classList.remove("is-adjacent", "is-dragging");
@@ -211,11 +211,20 @@ function resetVerticalPreview() {
 function previewVerticalDrag(totalY) {
   const viewport = Math.max(window.innerHeight, 1);
   const progress = Math.max(-1, Math.min(1, totalY / viewport));
-  const direction = totalY > 0 ? 1 : -1;
-  const nextIndex = normalizeSlideIndex(activeIndex + direction);
+  const direction = totalY < 0 ? 1 : -1;
+  const nextIndex = clampSlideIndex(activeIndex + direction);
   const active = slides[activeIndex];
   const next = slides[nextIndex];
   const absProgress = Math.abs(progress);
+
+  if (nextIndex === activeIndex) {
+    const resistance = progress * 18;
+    active.classList.add("is-dragging");
+    active.style.setProperty("--feed-y", `${resistance}%`);
+    active.style.setProperty("--feed-scale", String(1 - absProgress * 0.018));
+    active.style.setProperty("--feed-opacity", "1");
+    return;
+  }
 
   slides.forEach((slide, index) => {
     if (index !== activeIndex && index !== nextIndex) {
@@ -231,7 +240,7 @@ function previewVerticalDrag(totalY) {
   active.style.setProperty("--feed-opacity", String(1 - absProgress * 0.38));
 
   next.classList.add("is-adjacent", "is-dragging");
-  next.style.setProperty("--feed-y", `${direction * -82 + progress * 82}%`);
+  next.style.setProperty("--feed-y", `${direction * 82 + progress * 82}%`);
   next.style.setProperty("--feed-scale", String(0.985 + absProgress * 0.015));
   next.style.setProperty("--feed-opacity", String(0.18 + absProgress * 0.82));
 }
@@ -352,7 +361,7 @@ function onPointerUp(event) {
   const totalY = event.clientY - pointer.y;
 
   if (verticalLock && Math.abs(totalY) > 54 && Math.abs(totalY) > Math.abs(totalX) * 1.15) {
-    setActiveArtwork(totalY > 0 ? activeIndex + 1 : activeIndex - 1);
+    setActiveArtwork(totalY < 0 ? activeIndex + 1 : activeIndex - 1);
   } else if (
     getActiveArtwork() &&
     getActiveArtwork().sequence &&
