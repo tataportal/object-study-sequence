@@ -33,6 +33,7 @@ body {
   user-select: none;
 }
 
+.intro,
 .artwork {
   --feed-y: 100%;
   --feed-scale: 0.985;
@@ -47,6 +48,7 @@ body {
     transform 480ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+.intro.is-active,
 .artwork.is-active {
   --feed-y: 0%;
   --feed-scale: 1;
@@ -54,12 +56,65 @@ body {
   pointer-events: auto;
 }
 
+.intro.is-adjacent,
 .artwork.is-adjacent {
   pointer-events: none;
 }
 
+.intro.is-dragging,
 .artwork.is-dragging {
   transition: none;
+}
+
+.intro {
+  display: grid;
+  align-content: center;
+  min-height: 100dvh;
+  padding: clamp(28px, 7vw, 88px);
+}
+
+.intro-copy {
+  width: min(82vw, 680px);
+}
+
+.intro-kicker {
+  margin: 0 0 22px;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.intro h1 {
+  max-width: 12ch;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.5rem, 12vw, 7.2rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.intro-copy p:last-child {
+  max-width: 36rem;
+  margin: clamp(24px, 5vh, 42px) 0 0;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: clamp(0.98rem, 3.5vw, 1.18rem);
+  line-height: 1.5;
+}
+
+.intro-guide {
+  position: absolute;
+  left: clamp(18px, 5vw, 56px);
+  right: clamp(18px, 5vw, 56px);
+  bottom: calc(clamp(18px, 5vw, 56px) + env(safe-area-inset-bottom));
+  margin: 0;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .art-card {

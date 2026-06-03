@@ -1,4 +1,4 @@
-const assetVersion = "concept6-72";
+const assetVersion = "intro-screen-1";
 
 const sequences = [
   { dir: "001_face_jpg", count: 120, mode: "loop", interaction: "drag" },
@@ -7,6 +7,7 @@ const sequences = [
 ];
 
 const experience = document.querySelector("#experience");
+const intro = document.querySelector(".intro");
 const artworks = [...document.querySelectorAll(".artwork")].map((node, index) => ({
   node,
   card: node.querySelector(".art-card"),
@@ -16,12 +17,21 @@ const artworks = [...document.querySelectorAll(".artwork")].map((node, index) =>
   frame: 0,
   velocity: 0,
 }));
+const slides = [intro, ...artworks.map((artwork) => artwork.node)];
 
 let activeIndex = 0;
 let pointer = null;
 const activePointers = new Map();
 let verticalLock = false;
 let verticalDrag = 0;
+
+function getActiveArtwork() {
+  return artworks[activeIndex - 1] || null;
+}
+
+function normalizeSlideIndex(index) {
+  return ((index % slides.length) + slides.length) % slides.length;
+}
 
 function framePath(sequence, frame) {
   return `./${sequence.dir}/${String(frame + 1).padStart(4, "0")}.jpg?v=${assetVersion}`;
@@ -155,10 +165,15 @@ function jumpToClockFrame(artwork, clientX, clientY) {
 }
 
 function setActiveArtwork(nextIndex) {
-  activeIndex = ((nextIndex % artworks.length) + artworks.length) % artworks.length;
+  activeIndex = normalizeSlideIndex(nextIndex);
   verticalDrag = 0;
+  intro.classList.toggle("is-active", activeIndex === 0);
+  intro.classList.remove("is-adjacent", "is-dragging");
+  intro.style.removeProperty("--feed-y");
+  intro.style.removeProperty("--feed-scale");
+  intro.style.removeProperty("--feed-opacity");
   artworks.forEach((artwork, index) => {
-    artwork.node.classList.toggle("is-active", index === activeIndex);
+    artwork.node.classList.toggle("is-active", index + 1 === activeIndex);
     artwork.node.classList.remove("is-adjacent", "is-dragging");
     artwork.node.style.removeProperty("--feed-y");
     artwork.node.style.removeProperty("--feed-scale");
@@ -167,46 +182,46 @@ function setActiveArtwork(nextIndex) {
 }
 
 function resetVerticalPreview() {
-  artworks.forEach((artwork, index) => {
+  slides.forEach((slide, index) => {
     if (index === activeIndex) return;
-    artwork.node.classList.remove("is-adjacent", "is-dragging");
-    artwork.node.style.removeProperty("--feed-y");
-    artwork.node.style.removeProperty("--feed-scale");
-    artwork.node.style.removeProperty("--feed-opacity");
+    slide.classList.remove("is-adjacent", "is-dragging");
+    slide.style.removeProperty("--feed-y");
+    slide.style.removeProperty("--feed-scale");
+    slide.style.removeProperty("--feed-opacity");
   });
-  const active = artworks[activeIndex];
-  active.node.classList.remove("is-dragging");
-  active.node.style.removeProperty("--feed-y");
-  active.node.style.removeProperty("--feed-scale");
-  active.node.style.removeProperty("--feed-opacity");
+  const active = slides[activeIndex];
+  active.classList.remove("is-dragging");
+  active.style.removeProperty("--feed-y");
+  active.style.removeProperty("--feed-scale");
+  active.style.removeProperty("--feed-opacity");
 }
 
 function previewVerticalDrag(totalY) {
   const viewport = Math.max(window.innerHeight, 1);
   const progress = Math.max(-1, Math.min(1, totalY / viewport));
   const direction = totalY > 0 ? 1 : -1;
-  const nextIndex = ((activeIndex + direction) % artworks.length + artworks.length) % artworks.length;
-  const active = artworks[activeIndex];
-  const next = artworks[nextIndex];
+  const nextIndex = normalizeSlideIndex(activeIndex + direction);
+  const active = slides[activeIndex];
+  const next = slides[nextIndex];
   const absProgress = Math.abs(progress);
 
-  artworks.forEach((artwork, index) => {
+  slides.forEach((slide, index) => {
     if (index !== activeIndex && index !== nextIndex) {
-      artwork.node.classList.remove("is-adjacent", "is-dragging");
-      artwork.node.style.setProperty("--feed-opacity", "0");
-      artwork.node.style.setProperty("--feed-y", `${direction * 100}%`);
+      slide.classList.remove("is-adjacent", "is-dragging");
+      slide.style.setProperty("--feed-opacity", "0");
+      slide.style.setProperty("--feed-y", `${direction * 100}%`);
     }
   });
 
-  active.node.classList.add("is-dragging");
-  active.node.style.setProperty("--feed-y", `${progress * 82}%`);
-  active.node.style.setProperty("--feed-scale", String(1 - absProgress * 0.035));
-  active.node.style.setProperty("--feed-opacity", String(1 - absProgress * 0.38));
+  active.classList.add("is-dragging");
+  active.style.setProperty("--feed-y", `${progress * 82}%`);
+  active.style.setProperty("--feed-scale", String(1 - absProgress * 0.035));
+  active.style.setProperty("--feed-opacity", String(1 - absProgress * 0.38));
 
-  next.node.classList.add("is-adjacent", "is-dragging");
-  next.node.style.setProperty("--feed-y", `${direction * -82 + progress * 82}%`);
-  next.node.style.setProperty("--feed-scale", String(0.985 + absProgress * 0.015));
-  next.node.style.setProperty("--feed-opacity", String(0.18 + absProgress * 0.82));
+  next.classList.add("is-adjacent", "is-dragging");
+  next.style.setProperty("--feed-y", `${direction * -82 + progress * 82}%`);
+  next.style.setProperty("--feed-scale", String(0.985 + absProgress * 0.015));
+  next.style.setProperty("--feed-opacity", String(0.18 + absProgress * 0.82));
 }
 
 function preloadFrames() {
@@ -220,7 +235,7 @@ function preloadFrames() {
 }
 
 function onPointerDown(event) {
-  const artwork = artworks[activeIndex];
+  const artwork = getActiveArtwork();
 
   experience.setPointerCapture(event.pointerId);
   activePointers.set(event.pointerId, {
@@ -230,7 +245,7 @@ function onPointerDown(event) {
     target: event.target,
   });
 
-  if (startPinchIfReady(artwork)) return;
+  if (artwork && startPinchIfReady(artwork)) return;
   if (pointer) return;
 
   pointer = {
@@ -240,10 +255,10 @@ function onPointerDown(event) {
     lastX: event.clientX,
     lastY: event.clientY,
     mode: null,
-    horizontalAllowed: artwork.card.contains(event.target),
+    horizontalAllowed: artwork ? artwork.card.contains(event.target) : false,
   };
   verticalLock = false;
-  artwork.velocity = 0;
+  if (artwork) artwork.velocity = 0;
 }
 
 function onPointerMove(event) {
@@ -255,9 +270,9 @@ function onPointerMove(event) {
 
   if (!pointer) return;
 
-  const artwork = artworks[activeIndex];
+  const artwork = getActiveArtwork();
 
-  if (pointer.mode === "pinch") {
+  if (artwork && pointer.mode === "pinch") {
     const [firstId, secondId] = pointer.pinchIds;
     const first = activePointers.get(firstId);
     const second = activePointers.get(secondId);
@@ -287,6 +302,7 @@ function onPointerMove(event) {
   }
 
   if (
+    artwork &&
     pointer.mode === "horizontal" &&
     pointer.horizontalAllowed &&
     artwork.sequence.interaction !== "pinch"
@@ -324,13 +340,14 @@ function onPointerUp(event) {
   if (verticalLock && Math.abs(totalY) > 54 && Math.abs(totalY) > Math.abs(totalX) * 1.15) {
     setActiveArtwork(totalY > 0 ? activeIndex + 1 : activeIndex - 1);
   } else if (
+    getActiveArtwork() &&
     pointer.horizontalAllowed &&
     artworks[activeIndex].sequence.interaction !== "pinch" &&
     Math.hypot(totalX, totalY) < 10 &&
     pointer.mode !== "horizontal" &&
     pointer.mode !== "vertical"
   ) {
-    jumpToClockFrame(artworks[activeIndex], event.clientX, event.clientY);
+    jumpToClockFrame(getActiveArtwork(), event.clientX, event.clientY);
   }
 
   pointer = null;
@@ -340,7 +357,11 @@ function onPointerUp(event) {
 }
 
 function animate() {
-  const artwork = artworks[activeIndex];
+  const artwork = getActiveArtwork();
+  if (!artwork) {
+    requestAnimationFrame(animate);
+    return;
+  }
   if (!pointer && Math.abs(artwork.velocity) > 0.01) {
     artwork.frame += artwork.velocity;
     artwork.velocity *= 0.93;
