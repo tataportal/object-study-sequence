@@ -68,6 +68,35 @@ function applyPost(artwork) {
   artwork.card.style.setProperty("--motion-shift", `${shift}px`);
 }
 
+function dragArtworkFrame(artwork, dx) {
+  const frameDelta = dx * 0.22;
+  const velocity = dx * 0.18;
+
+  if (artwork.sequence.mode !== "bounce") {
+    artwork.frame += frameDelta;
+    artwork.velocity = velocity;
+    return;
+  }
+
+  const max = artwork.sequence.count - 1;
+  const nextFrame = artwork.frame + frameDelta;
+
+  if (nextFrame < 0) {
+    artwork.frame = 0;
+    artwork.velocity = velocity < 0 ? 0 : velocity;
+    return;
+  }
+
+  if (nextFrame > max) {
+    artwork.frame = max;
+    artwork.velocity = velocity > 0 ? velocity : 0;
+    return;
+  }
+
+  artwork.frame = nextFrame;
+  artwork.velocity = velocity;
+}
+
 function jumpToClockFrame(artwork, clientX, clientY) {
   const rect = artwork.card.getBoundingClientRect();
   const centerX = rect.left + rect.width / 2;
@@ -184,8 +213,7 @@ function onPointerMove(event) {
   }
 
   if (pointer.mode === "horizontal" && pointer.horizontalAllowed) {
-    artwork.frame += dx * 0.22;
-    artwork.velocity = dx * 0.18;
+    dragArtworkFrame(artwork, dx);
     renderArtwork(artwork);
     applyPost(artwork);
   }
