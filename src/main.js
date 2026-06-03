@@ -36,6 +36,23 @@ function applyPost(artwork) {
   artwork.card.style.setProperty("--motion-shift", `${shift}px`);
 }
 
+function jumpToClockFrame(artwork, clientX, clientY) {
+  const rect = artwork.card.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const dx = clientX - centerX;
+  const dy = clientY - centerY;
+
+  if (Math.hypot(dx, dy) < Math.min(rect.width, rect.height) * 0.12) return;
+
+  const angle = (Math.atan2(dy, dx) + Math.PI * 2) % (Math.PI * 2);
+  const hourSlot = Math.round((angle / (Math.PI * 2)) * 12) % 12;
+  artwork.frame = (hourSlot / 12) * frameCount;
+  artwork.velocity = 0;
+  renderArtwork(artwork);
+  applyPost(artwork);
+}
+
 function setActiveArtwork(nextIndex) {
   activeIndex = ((nextIndex % artworks.length) + artworks.length) % artworks.length;
   artworks.forEach((artwork, index) => {
@@ -102,6 +119,13 @@ function onPointerUp(event) {
 
   if (verticalLock && Math.abs(totalY) > 54 && Math.abs(totalY) > Math.abs(totalX) * 1.15) {
     setActiveArtwork(totalY > 0 ? activeIndex + 1 : activeIndex - 1);
+  } else if (
+    pointer.horizontalAllowed &&
+    Math.hypot(totalX, totalY) < 10 &&
+    pointer.mode !== "horizontal" &&
+    pointer.mode !== "vertical"
+  ) {
+    jumpToClockFrame(artworks[activeIndex], event.clientX, event.clientY);
   }
 
   pointer = null;
