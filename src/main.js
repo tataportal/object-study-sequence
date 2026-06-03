@@ -2,8 +2,8 @@ const assetVersion = "intro-screen-1";
 
 const sequences = [
   { dir: "001_face_jpg", count: 120, mode: "loop", interaction: "drag" },
-  { dir: "002_habit_jpg", count: 120, mode: "bounce", interaction: "drag" },
   { dir: "003_concept6_jpg", count: 72, mode: "bounce", interaction: "pinch" },
+  { dir: "002_habit_jpg", count: 120, mode: "bounce", interaction: "drag" },
   null,
 ];
 

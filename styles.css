@@ -166,15 +166,15 @@ body {
 
 .artwork[data-artwork="1"] .art-card {
   --frame-fit: contain;
-  --frame-scale: 2.25;
-  --glow-scale: 2.32;
+  --frame-rotate: 90deg;
+  --frame-scale: 2.35;
+  --glow-scale: 2.42;
 }
 
 .artwork[data-artwork="2"] .art-card {
   --frame-fit: contain;
-  --frame-rotate: 90deg;
-  --frame-scale: 2.35;
-  --glow-scale: 2.42;
+  --frame-scale: 2.25;
+  --glow-scale: 2.32;
 }
 
 @media (orientation: landscape), (min-width: 760px) {
