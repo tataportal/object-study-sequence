@@ -251,9 +251,6 @@ function preloadFrames() {
 function onPointerDown(event) {
   const artwork = getActiveArtwork();
 
-  if (artwork && !artwork.sequence && event.target.closest(".three-stage")) return;
-
-  experience.setPointerCapture(event.pointerId);
   activePointers.set(event.pointerId, {
     id: event.pointerId,
     x: event.clientX,
