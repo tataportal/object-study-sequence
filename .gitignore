@@ -1,0 +1,10 @@
+001_face/
+001_face_webp/
+*.blend
+*.blend1
+*.glb
+*.obj
+*.mtl
+mobile-preview.png
+models/
+.DS_Store
