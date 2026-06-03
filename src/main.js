@@ -5,6 +5,7 @@ const sequences = [
   { dir: "003_concept6_jpg", count: 72, mode: "bounce", interaction: "pinch" },
   { dir: "002_habit_jpg", count: 120, mode: "bounce", interaction: "drag" },
   null,
+  null,
 ];
 
 const experience = document.querySelector("#experience");
