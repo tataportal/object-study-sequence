@@ -105,6 +105,13 @@ body {
   mix-blend-mode: screen;
 }
 
+.artwork[data-artwork="1"] .sequence-frame,
+.artwork[data-artwork="1"] .sequence-glow,
+.artwork[data-artwork="2"] .sequence-frame,
+.artwork[data-artwork="2"] .sequence-glow {
+  object-fit: contain;
+}
+
 .caption {
   position: absolute;
   left: clamp(18px, 5vw, 56px);
