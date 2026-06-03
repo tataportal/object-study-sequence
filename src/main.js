@@ -1,3 +1,5 @@
+const assetVersion = "wide-frames-2";
+
 const sequences = [
   { dir: "001_face_jpg", count: 120, mode: "loop", interaction: "drag" },
   { dir: "002_habit_jpg", count: 120, mode: "bounce", interaction: "drag" },
@@ -22,7 +24,7 @@ let verticalLock = false;
 let verticalDrag = 0;
 
 function framePath(sequence, frame) {
-  return `./${sequence.dir}/${String(frame + 1).padStart(4, "0")}.jpg`;
+  return `./${sequence.dir}/${String(frame + 1).padStart(4, "0")}.jpg?v=${assetVersion}`;
 }
 
 function normalizeFrame(artwork) {
