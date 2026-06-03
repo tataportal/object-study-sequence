@@ -111,13 +111,13 @@ body {
 
 .artwork[data-artwork="1"] .art-card {
   --frame-fit: contain;
-  --frame-rotate: 90deg;
-  --frame-scale: 2.08;
-  --glow-scale: 2.15;
+  --frame-scale: 2.25;
+  --glow-scale: 2.32;
 }
 
 .artwork[data-artwork="2"] .art-card {
   --frame-fit: contain;
+  --frame-rotate: 90deg;
   --frame-scale: 2.35;
   --glow-scale: 2.42;
 }
