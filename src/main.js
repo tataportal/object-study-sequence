@@ -17,6 +17,7 @@ const artworks = [...document.querySelectorAll(".artwork")].map((node) => ({
 let activeIndex = 0;
 let pointer = null;
 let verticalLock = false;
+let verticalDrag = 0;
 
 function wrapFrame(value) {
   return ((Math.round(value) % frameCount) + frameCount) % frameCount;
@@ -55,9 +56,57 @@ function jumpToClockFrame(artwork, clientX, clientY) {
 
 function setActiveArtwork(nextIndex) {
   activeIndex = ((nextIndex % artworks.length) + artworks.length) % artworks.length;
+  verticalDrag = 0;
   artworks.forEach((artwork, index) => {
     artwork.node.classList.toggle("is-active", index === activeIndex);
+    artwork.node.classList.remove("is-adjacent", "is-dragging");
+    artwork.node.style.removeProperty("--feed-y");
+    artwork.node.style.removeProperty("--feed-scale");
+    artwork.node.style.removeProperty("--feed-opacity");
   });
+}
+
+function resetVerticalPreview() {
+  artworks.forEach((artwork, index) => {
+    if (index === activeIndex) return;
+    artwork.node.classList.remove("is-adjacent", "is-dragging");
+    artwork.node.style.removeProperty("--feed-y");
+    artwork.node.style.removeProperty("--feed-scale");
+    artwork.node.style.removeProperty("--feed-opacity");
+  });
+  const active = artworks[activeIndex];
+  active.node.classList.remove("is-dragging");
+  active.node.style.removeProperty("--feed-y");
+  active.node.style.removeProperty("--feed-scale");
+  active.node.style.removeProperty("--feed-opacity");
+}
+
+function previewVerticalDrag(totalY) {
+  const viewport = Math.max(window.innerHeight, 1);
+  const progress = Math.max(-1, Math.min(1, totalY / viewport));
+  const direction = totalY > 0 ? 1 : -1;
+  const nextIndex = ((activeIndex + direction) % artworks.length + artworks.length) % artworks.length;
+  const active = artworks[activeIndex];
+  const next = artworks[nextIndex];
+  const absProgress = Math.abs(progress);
+
+  artworks.forEach((artwork, index) => {
+    if (index !== activeIndex && index !== nextIndex) {
+      artwork.node.classList.remove("is-adjacent", "is-dragging");
+      artwork.node.style.setProperty("--feed-opacity", "0");
+      artwork.node.style.setProperty("--feed-y", `${direction * 100}%`);
+    }
+  });
+
+  active.node.classList.add("is-dragging");
+  active.node.style.setProperty("--feed-y", `${progress * 82}%`);
+  active.node.style.setProperty("--feed-scale", String(1 - absProgress * 0.035));
+  active.node.style.setProperty("--feed-opacity", String(1 - absProgress * 0.38));
+
+  next.node.classList.add("is-adjacent", "is-dragging");
+  next.node.style.setProperty("--feed-y", `${direction * -82 + progress * 82}%`);
+  next.node.style.setProperty("--feed-scale", String(0.985 + absProgress * 0.015));
+  next.node.style.setProperty("--feed-opacity", String(0.18 + absProgress * 0.82));
 }
 
 function preloadFrames() {
@@ -108,6 +157,8 @@ function onPointerMove(event) {
 
   if (pointer.mode === "vertical") {
     verticalLock = true;
+    verticalDrag = totalY;
+    previewVerticalDrag(totalY);
   }
 }
 
@@ -130,6 +181,8 @@ function onPointerUp(event) {
 
   pointer = null;
   verticalLock = false;
+  verticalDrag = 0;
+  resetVerticalPreview();
 }
 
 function animate() {
