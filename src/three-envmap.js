@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { EXRLoader } from "three/addons/loaders/EXRLoader.js";
 
 const stage = document.querySelector("#three-stage") || document.querySelector("#stage");
@@ -52,16 +51,21 @@ planeMesh.position.y = -50;
 planeMesh.rotation.x = -Math.PI * 0.5;
 scene.add(planeMesh);
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.enablePan = false;
-controls.minDistance = 50;
-controls.maxDistance = 300;
-
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 pmremGenerator.compileEquirectangularShader();
 
 let exrCubeRenderTarget = null;
+const raycaster = new THREE.Raycaster();
+const pointerNdc = new THREE.Vector2();
+const modelDrag = {
+  active: false,
+  pointerId: null,
+  lastX: 0,
+  lastY: 0,
+  velocityX: 0,
+  velocityY: 0,
+};
+
 window.__threeEnvmapState = { envLoaded: false, exrUrl };
 
 new EXRLoader().load(exrUrl, (texture) => {
@@ -84,6 +88,53 @@ function resize() {
   renderer.setSize(width, height);
 }
 
+function pointerHitsObject(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNdc.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+  raycaster.setFromCamera(pointerNdc, camera);
+  return raycaster.intersectObject(torusMesh, false).length > 0;
+}
+
+function onModelPointerDown(event) {
+  if (!pointerHitsObject(event)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  renderer.domElement.setPointerCapture(event.pointerId);
+  modelDrag.active = true;
+  modelDrag.pointerId = event.pointerId;
+  modelDrag.lastX = event.clientX;
+  modelDrag.lastY = event.clientY;
+  modelDrag.velocityX = 0;
+  modelDrag.velocityY = 0;
+}
+
+function onModelPointerMove(event) {
+  if (!modelDrag.active || modelDrag.pointerId !== event.pointerId) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  const dx = event.clientX - modelDrag.lastX;
+  const dy = event.clientY - modelDrag.lastY;
+  modelDrag.lastX = event.clientX;
+  modelDrag.lastY = event.clientY;
+  modelDrag.velocityY = dx * 0.008;
+  modelDrag.velocityX = dy * 0.008;
+  torusMesh.rotation.y += modelDrag.velocityY;
+  torusMesh.rotation.x += modelDrag.velocityX;
+}
+
+function onModelPointerUp(event) {
+  if (!modelDrag.active || modelDrag.pointerId !== event.pointerId) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  renderer.domElement.releasePointerCapture(event.pointerId);
+  modelDrag.active = false;
+  modelDrag.pointerId = null;
+}
+
 function render() {
   if (exrCubeRenderTarget && torusMesh.material.envMap !== exrCubeRenderTarget.texture) {
     torusMesh.material.envMap = exrCubeRenderTarget.texture;
@@ -92,11 +143,20 @@ function render() {
     planeMesh.material.needsUpdate = true;
   }
 
-  torusMesh.rotation.y += 0.005;
-  controls.update();
+  if (!modelDrag.active) {
+    torusMesh.rotation.y += 0.003 + modelDrag.velocityY;
+    torusMesh.rotation.x += modelDrag.velocityX;
+    modelDrag.velocityY *= 0.94;
+    modelDrag.velocityX *= 0.94;
+  }
+
   renderer.render(scene, camera);
 }
 
 resize();
 renderer.setAnimationLoop(render);
 window.addEventListener("resize", resize);
+renderer.domElement.addEventListener("pointerdown", onModelPointerDown);
+renderer.domElement.addEventListener("pointermove", onModelPointerMove);
+renderer.domElement.addEventListener("pointerup", onModelPointerUp);
+renderer.domElement.addEventListener("pointercancel", onModelPointerUp);
