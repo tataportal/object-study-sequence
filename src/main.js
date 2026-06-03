@@ -1,7 +1,7 @@
 const sequences = [
-  { dir: "001_face_jpg", count: 120, mode: "loop" },
-  { dir: "002_habit_jpg", count: 120, mode: "bounce" },
-  { dir: "001_face_jpg", count: 120, mode: "loop" },
+  { dir: "001_face_jpg", count: 120, mode: "loop", interaction: "drag" },
+  { dir: "002_habit_jpg", count: 120, mode: "bounce", interaction: "drag" },
+  { dir: "003_concept6_jpg", count: 101, mode: "bounce", interaction: "pinch" },
 ];
 
 const experience = document.querySelector("#experience");
@@ -17,6 +17,7 @@ const artworks = [...document.querySelectorAll(".artwork")].map((node, index) =>
 
 let activeIndex = 0;
 let pointer = null;
+const activePointers = new Map();
 let verticalLock = false;
 let verticalDrag = 0;
 
@@ -68,10 +69,7 @@ function applyPost(artwork) {
   artwork.card.style.setProperty("--motion-shift", `${shift}px`);
 }
 
-function dragArtworkFrame(artwork, dx) {
-  const frameDelta = dx * 0.22;
-  const velocity = dx * 0.18;
-
+function applyFrameInput(artwork, frameDelta, velocity) {
   if (artwork.sequence.mode !== "bounce") {
     artwork.frame += frameDelta;
     artwork.velocity = velocity;
@@ -95,6 +93,45 @@ function dragArtworkFrame(artwork, dx) {
 
   artwork.frame = nextFrame;
   artwork.velocity = velocity;
+}
+
+function dragArtworkFrame(artwork, dx) {
+  applyFrameInput(artwork, dx * 0.22, dx * 0.18);
+}
+
+function pinchArtworkFrame(artwork, distanceDelta) {
+  applyFrameInput(artwork, distanceDelta * 0.3, distanceDelta * 0.24);
+}
+
+function distanceBetween(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function activeCardPointers(artwork) {
+  return [...activePointers.values()].filter((point) => artwork.card.contains(point.target));
+}
+
+function startPinchIfReady(artwork) {
+  if (artwork.sequence.interaction !== "pinch") return false;
+
+  const cardPointers = activeCardPointers(artwork);
+  if (cardPointers.length < 2) return false;
+
+  const [first, second] = cardPointers;
+  pointer = {
+    id: first.id,
+    x: first.x,
+    y: first.y,
+    lastX: first.x,
+    lastY: first.y,
+    mode: "pinch",
+    horizontalAllowed: true,
+    pinchIds: [first.id, second.id],
+    lastDistance: distanceBetween(first, second),
+  };
+  verticalLock = false;
+  artwork.velocity = 0;
+  return true;
 }
 
 function jumpToClockFrame(artwork, clientX, clientY) {
@@ -184,6 +221,16 @@ function onPointerDown(event) {
   const artwork = artworks[activeIndex];
 
   experience.setPointerCapture(event.pointerId);
+  activePointers.set(event.pointerId, {
+    id: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    target: event.target,
+  });
+
+  if (startPinchIfReady(artwork)) return;
+  if (pointer) return;
+
   pointer = {
     id: event.pointerId,
     x: event.clientX,
@@ -198,9 +245,34 @@ function onPointerDown(event) {
 }
 
 function onPointerMove(event) {
-  if (!pointer || pointer.id !== event.pointerId) return;
+  const tracked = activePointers.get(event.pointerId);
+  if (tracked) {
+    tracked.x = event.clientX;
+    tracked.y = event.clientY;
+  }
+
+  if (!pointer) return;
 
   const artwork = artworks[activeIndex];
+
+  if (pointer.mode === "pinch") {
+    const [firstId, secondId] = pointer.pinchIds;
+    const first = activePointers.get(firstId);
+    const second = activePointers.get(secondId);
+    if (!first || !second) return;
+
+    const distance = distanceBetween(first, second);
+    const distanceDelta = distance - pointer.lastDistance;
+    pointer.lastDistance = distance;
+
+    pinchArtworkFrame(artwork, distanceDelta);
+    renderArtwork(artwork);
+    applyPost(artwork);
+    return;
+  }
+
+  if (pointer.id !== event.pointerId) return;
+
   const dx = event.clientX - pointer.lastX;
   const dy = event.clientY - pointer.lastY;
   const totalX = event.clientX - pointer.x;
@@ -212,7 +284,11 @@ function onPointerMove(event) {
     pointer.mode = Math.abs(totalX) > Math.abs(totalY) ? "horizontal" : "vertical";
   }
 
-  if (pointer.mode === "horizontal" && pointer.horizontalAllowed) {
+  if (
+    pointer.mode === "horizontal" &&
+    pointer.horizontalAllowed &&
+    artwork.sequence.interaction !== "pinch"
+  ) {
     dragArtworkFrame(artwork, dx);
     renderArtwork(artwork);
     applyPost(artwork);
@@ -226,7 +302,19 @@ function onPointerMove(event) {
 }
 
 function onPointerUp(event) {
-  if (!pointer || pointer.id !== event.pointerId) return;
+  activePointers.delete(event.pointerId);
+
+  if (!pointer) return;
+
+  if (pointer.mode === "pinch") {
+    pointer = null;
+    verticalLock = false;
+    verticalDrag = 0;
+    resetVerticalPreview();
+    return;
+  }
+
+  if (pointer.id !== event.pointerId) return;
 
   const totalX = event.clientX - pointer.x;
   const totalY = event.clientY - pointer.y;
@@ -235,6 +323,7 @@ function onPointerUp(event) {
     setActiveArtwork(totalY > 0 ? activeIndex + 1 : activeIndex - 1);
   } else if (
     pointer.horizontalAllowed &&
+    artworks[activeIndex].sequence.interaction !== "pinch" &&
     Math.hypot(totalX, totalY) < 10 &&
     pointer.mode !== "horizontal" &&
     pointer.mode !== "vertical"
