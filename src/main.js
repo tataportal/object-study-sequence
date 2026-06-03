@@ -1,15 +1,16 @@
-const frameCount = 120;
-const framePaths = Array.from({ length: frameCount }, (_, index) => {
-  const frame = String(index + 1).padStart(4, "0");
-  return `./001_face_jpg/${frame}.jpg`;
-});
+const sequences = [
+  { dir: "001_face_jpg", count: 120, mode: "loop" },
+  { dir: "002_habit_jpg", count: 120, mode: "bounce" },
+  { dir: "001_face_jpg", count: 120, mode: "loop" },
+];
 
 const experience = document.querySelector("#experience");
-const artworks = [...document.querySelectorAll(".artwork")].map((node) => ({
+const artworks = [...document.querySelectorAll(".artwork")].map((node, index) => ({
   node,
   card: node.querySelector(".art-card"),
   image: node.querySelector(".sequence-frame"),
   glow: node.querySelector(".sequence-glow"),
+  sequence: sequences[index] || sequences[0],
   frame: 0,
   velocity: 0,
 }));
@@ -19,12 +20,42 @@ let pointer = null;
 let verticalLock = false;
 let verticalDrag = 0;
 
-function wrapFrame(value) {
-  return ((Math.round(value) % frameCount) + frameCount) % frameCount;
+function framePath(sequence, frame) {
+  return `./${sequence.dir}/${String(frame + 1).padStart(4, "0")}.jpg`;
+}
+
+function normalizeFrame(artwork) {
+  const { count, mode } = artwork.sequence;
+  const max = count - 1;
+
+  if (mode !== "bounce") {
+    artwork.frame = ((artwork.frame % count) + count) % count;
+    return;
+  }
+
+  if (max <= 0) {
+    artwork.frame = 0;
+    artwork.velocity = 0;
+    return;
+  }
+
+  while (artwork.frame > max || artwork.frame < 0) {
+    if (artwork.frame > max) {
+      artwork.frame = max - (artwork.frame - max);
+      artwork.velocity *= -0.82;
+    }
+
+    if (artwork.frame < 0) {
+      artwork.frame = -artwork.frame;
+      artwork.velocity *= -0.82;
+    }
+  }
 }
 
 function renderArtwork(artwork) {
-  const src = framePaths[wrapFrame(artwork.frame)];
+  normalizeFrame(artwork);
+  const index = Math.max(0, Math.min(artwork.sequence.count - 1, Math.round(artwork.frame)));
+  const src = framePath(artwork.sequence, index);
   artwork.image.src = src;
   artwork.glow.src = src;
 }
@@ -46,9 +77,10 @@ function jumpToClockFrame(artwork, clientX, clientY) {
 
   if (Math.hypot(dx, dy) < Math.min(rect.width, rect.height) * 0.12) return;
 
-  const angle = (Math.atan2(dy, dx) + Math.PI * 2) % (Math.PI * 2);
+  const rawAngle = (Math.atan2(dy, dx) + Math.PI * 2) % (Math.PI * 2);
+  const angle = (Math.PI * 2 - rawAngle) % (Math.PI * 2);
   const hourSlot = Math.round((angle / (Math.PI * 2)) * 12) % 12;
-  artwork.frame = (hourSlot / 12) * frameCount;
+  artwork.frame = (hourSlot / 12) * artwork.sequence.count;
   artwork.velocity = 0;
   renderArtwork(artwork);
   applyPost(artwork);
@@ -110,9 +142,12 @@ function previewVerticalDrag(totalY) {
 }
 
 function preloadFrames() {
-  framePaths.forEach((src) => {
-    const image = new Image();
-    image.src = src;
+  sequences.forEach((sequence) => {
+    Array.from({ length: sequence.count }, (_, index) => {
+      const image = new Image();
+      image.src = framePath(sequence, index);
+      return image;
+    });
   });
 }
 
