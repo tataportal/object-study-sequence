@@ -88,7 +88,7 @@ function createViewer(stage, index) {
       scene.remove(objectRoot);
       objectRoot = gltf.scene;
       prepareModel(objectRoot);
-      centerObject(objectRoot, 72);
+      centerObject(objectRoot, 46);
       if (exrCubeRenderTarget) applyEnvironmentToObject(objectRoot, exrCubeRenderTarget.texture);
       applyMaterialState(objectRoot, state);
       scene.add(objectRoot);
@@ -231,8 +231,11 @@ function centerObject(root, targetSize) {
   const size = box.getSize(new THREE.Vector3());
   const maxAxis = Math.max(size.x, size.y, size.z);
 
-  root.position.sub(center);
   if (maxAxis > 0) root.scale.setScalar(targetSize / maxAxis);
+
+  const scaledBox = new THREE.Box3().setFromObject(root);
+  const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+  root.position.sub(scaledCenter);
 }
 
 function applyEnvironmentToObject(root, envMap) {
