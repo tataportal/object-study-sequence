@@ -53,8 +53,8 @@ function createViewer(stage, index) {
     pointerId: null,
     lastX: 0,
     lastY: 0,
-    velocityX: 0,
-    velocityY: 0,
+    metalVelocity: 0,
+    roughnessVelocity: 0,
   };
   const state = {
     envLoaded: false,
@@ -62,6 +62,8 @@ function createViewer(stage, index) {
     modelLoaded: false,
     modelUrl: stage.dataset.model || null,
     type: stage.dataset.model ? "gltf" : "torus",
+    metalness: stage.dataset.model ? 0 : 0,
+    roughness: stage.dataset.model ? 0.18 : 0.04,
   };
   window.__threeEnvmapState[index] = state;
 
@@ -88,6 +90,7 @@ function createViewer(stage, index) {
       prepareModel(objectRoot);
       centerObject(objectRoot, 72);
       if (exrCubeRenderTarget) applyEnvironmentToObject(objectRoot, exrCubeRenderTarget.texture);
+      applyMaterialState(objectRoot, state);
       scene.add(objectRoot);
       state.modelLoaded = true;
     }, undefined, (error) => {
@@ -111,7 +114,13 @@ function createViewer(stage, index) {
     pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointerNdc.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
     raycaster.setFromCamera(pointerNdc, camera);
-    return raycaster.intersectObject(objectRoot, true).length > 0;
+    if (raycaster.intersectObject(objectRoot, true).length > 0) return true;
+
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = Math.abs(event.clientX - centerX) / rect.width;
+    const dy = Math.abs(event.clientY - centerY) / rect.height;
+    return state.type === "gltf" && dx < 0.34 && dy < 0.38;
   }
 
   function onModelPointerDown(event) {
@@ -119,13 +128,17 @@ function createViewer(stage, index) {
 
     event.preventDefault();
     event.stopPropagation();
-    renderer.domElement.setPointerCapture(event.pointerId);
     modelDrag.active = true;
     modelDrag.pointerId = event.pointerId;
     modelDrag.lastX = event.clientX;
     modelDrag.lastY = event.clientY;
-    modelDrag.velocityX = 0;
-    modelDrag.velocityY = 0;
+    modelDrag.metalVelocity = 0;
+    modelDrag.roughnessVelocity = 0;
+    try {
+      stage.setPointerCapture(event.pointerId);
+    } catch {
+      // Synthetic test events do not always register as active pointers.
+    }
   }
 
   function onModelPointerMove(event) {
@@ -137,10 +150,9 @@ function createViewer(stage, index) {
     const dy = event.clientY - modelDrag.lastY;
     modelDrag.lastX = event.clientX;
     modelDrag.lastY = event.clientY;
-    modelDrag.velocityY = dx * 0.008;
-    modelDrag.velocityX = dy * 0.008;
-    objectRoot.rotation.y += modelDrag.velocityY;
-    objectRoot.rotation.x += modelDrag.velocityX;
+    modelDrag.metalVelocity = dx * 0.0025;
+    modelDrag.roughnessVelocity = -dy * 0.0025;
+    updateMaterialState(modelDrag.metalVelocity, modelDrag.roughnessVelocity);
   }
 
   function onModelPointerUp(event) {
@@ -148,29 +160,41 @@ function createViewer(stage, index) {
 
     event.preventDefault();
     event.stopPropagation();
-    renderer.domElement.releasePointerCapture(event.pointerId);
+    try {
+      stage.releasePointerCapture(event.pointerId);
+    } catch {
+      // Ignore release failures for synthetic or already-cancelled pointers.
+    }
     modelDrag.active = false;
     modelDrag.pointerId = null;
   }
 
   function render() {
     if (!modelDrag.active) {
-      objectRoot.rotation.y += 0.003 + modelDrag.velocityY;
-      objectRoot.rotation.x += modelDrag.velocityX;
-      modelDrag.velocityY *= 0.94;
-      modelDrag.velocityX *= 0.94;
+      objectRoot.rotation.y += 0.003;
+      if (Math.abs(modelDrag.metalVelocity) > 0.0001 || Math.abs(modelDrag.roughnessVelocity) > 0.0001) {
+        updateMaterialState(modelDrag.metalVelocity, modelDrag.roughnessVelocity);
+        modelDrag.metalVelocity *= 0.9;
+        modelDrag.roughnessVelocity *= 0.9;
+      }
     }
 
     renderer.render(scene, camera);
   }
 
+  function updateMaterialState(metalDelta, roughnessDelta) {
+    state.metalness = THREE.MathUtils.clamp(state.metalness + metalDelta, 0, 1);
+    state.roughness = THREE.MathUtils.clamp(state.roughness - roughnessDelta, 0.02, 0.75);
+    applyMaterialState(objectRoot, state);
+  }
+
   resize();
   renderer.setAnimationLoop(render);
   window.addEventListener("resize", resize);
-  renderer.domElement.addEventListener("pointerdown", onModelPointerDown);
-  renderer.domElement.addEventListener("pointermove", onModelPointerMove);
-  renderer.domElement.addEventListener("pointerup", onModelPointerUp);
-  renderer.domElement.addEventListener("pointercancel", onModelPointerUp);
+  stage.addEventListener("pointerdown", onModelPointerDown, { capture: true });
+  stage.addEventListener("pointermove", onModelPointerMove, { capture: true });
+  stage.addEventListener("pointerup", onModelPointerUp, { capture: true });
+  stage.addEventListener("pointercancel", onModelPointerUp, { capture: true });
 }
 
 function createTorus() {
@@ -216,5 +240,17 @@ function applyEnvironmentToObject(root, envMap) {
     if (!node.isMesh || !node.material) return;
     node.material.envMap = envMap;
     node.material.needsUpdate = true;
+  });
+}
+
+function applyMaterialState(root, state) {
+  root.traverse((node) => {
+    if (!node.isMesh || !node.material) return;
+    const materials = Array.isArray(node.material) ? node.material : [node.material];
+    materials.forEach((material) => {
+      material.metalness = state.metalness;
+      material.roughness = state.roughness;
+      material.needsUpdate = true;
+    });
   });
 }

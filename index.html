@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Object Study</title>
-    <link rel="stylesheet" href="./styles.css?v=van-frames-1" />
+    <link rel="stylesheet" href="./styles.css?v=index-view-2" />
     <link rel="stylesheet" href="./three-envmap.css?v=van-frames-1" />
   </head>
   <body>
@@ -68,7 +68,44 @@
       </section>
     </main>
 
-    <script defer src="./src/main.js?v=van-frames-1"></script>
+    <button class="index-toggle" type="button" aria-label="Abrir índice" aria-expanded="false">
+      <span class="index-toggle__grid" aria-hidden="true"></span>
+    </button>
+
+    <aside class="index-panel" data-view="grid" aria-hidden="true" aria-label="Índice de obras">
+      <div class="index-panel__bar">
+        <button class="index-view-toggle" type="button" aria-label="Cambiar vista">Lista</button>
+        <button class="index-close" type="button" aria-label="Cerrar índice">Cerrar</button>
+      </div>
+      <div class="index-items">
+        <button class="index-item" type="button" data-slide="1">
+          <img src="./001_face_jpg/0001.jpg?v=concept6-72" alt="" draggable="false" />
+          <span>Cara</span>
+        </button>
+        <button class="index-item" type="button" data-slide="2">
+          <img src="./003_concept6_jpg/0001.jpg?v=concept6-72" alt="" draggable="false" />
+          <span>Concept 6</span>
+        </button>
+        <button class="index-item" type="button" data-slide="3">
+          <img src="./002_habit_jpg/0001.jpg?v=concept6-72" alt="" draggable="false" />
+          <span>Romantizing</span>
+        </button>
+        <button class="index-item" type="button" data-slide="4">
+          <span class="index-item__placeholder">EXR</span>
+          <span>Three.js</span>
+        </button>
+        <button class="index-item" type="button" data-slide="5">
+          <span class="index-item__placeholder">GLB</span>
+          <span>Grau</span>
+        </button>
+        <button class="index-item" type="button" data-slide="6">
+          <img src="./006_van_jpg/0001.jpg?v=van-frames-1" alt="" draggable="false" />
+          <span>Van</span>
+        </button>
+      </div>
+    </aside>
+
+    <script defer src="./src/main.js?v=index-view-2"></script>
     <script type="importmap">
       {
         "imports": {
@@ -77,6 +114,6 @@
         }
       }
     </script>
-    <script type="module" src="./src/three-envmap.js?v=van-frames-1"></script>
+    <script type="module" src="./src/three-envmap.js?v=grau-material-swipe-3"></script>
   </body>
 </html>

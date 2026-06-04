@@ -11,6 +11,11 @@ const sequences = [
 
 const experience = document.querySelector("#experience");
 const intro = document.querySelector(".intro");
+const indexToggle = document.querySelector(".index-toggle");
+const indexPanel = document.querySelector(".index-panel");
+const indexViewToggle = document.querySelector(".index-view-toggle");
+const indexClose = document.querySelector(".index-close");
+const indexItems = [...document.querySelectorAll(".index-item")];
 const artworks = [...document.querySelectorAll(".artwork")].map((node, index) => ({
   node,
   card: node.querySelector(".art-card"),
@@ -27,6 +32,7 @@ let pointer = null;
 const activePointers = new Map();
 let verticalLock = false;
 let verticalDrag = 0;
+let indexOpen = false;
 
 function getActiveArtwork() {
   return artworks[activeIndex - 1] || null;
@@ -193,6 +199,21 @@ function setActiveArtwork(nextIndex) {
     artwork.node.style.removeProperty("--feed-scale");
     artwork.node.style.removeProperty("--feed-opacity");
   });
+}
+
+function setIndexOpen(nextOpen) {
+  indexOpen = nextOpen;
+  indexPanel?.classList.toggle("is-open", indexOpen);
+  indexPanel?.setAttribute("aria-hidden", String(!indexOpen));
+  indexToggle?.setAttribute("aria-expanded", String(indexOpen));
+}
+
+function toggleIndexView() {
+  if (!indexPanel || !indexViewToggle) return;
+
+  const nextView = indexPanel.dataset.view === "grid" ? "list" : "grid";
+  indexPanel.dataset.view = nextView;
+  indexViewToggle.textContent = nextView === "grid" ? "Lista" : "Cuadricula";
 }
 
 function resetVerticalPreview() {
@@ -409,6 +430,15 @@ experience.addEventListener("pointerdown", onPointerDown);
 experience.addEventListener("pointermove", onPointerMove);
 experience.addEventListener("pointerup", onPointerUp);
 experience.addEventListener("pointercancel", onPointerUp);
+indexToggle?.addEventListener("click", () => setIndexOpen(!indexOpen));
+indexClose?.addEventListener("click", () => setIndexOpen(false));
+indexViewToggle?.addEventListener("click", toggleIndexView);
+indexItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    setActiveArtwork(Number(item.dataset.slide));
+    setIndexOpen(false);
+  });
+});
 
 preloadFrames();
 setActiveArtwork(0);
