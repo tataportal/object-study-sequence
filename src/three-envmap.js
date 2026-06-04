@@ -232,8 +232,7 @@ function prepareModel(root) {
     if (node.material) {
       node.material.envMapIntensity = 1.25;
       node.material.roughness = Math.max(node.material.roughness ?? 0.18, 0.08);
-      node.material.side = THREE.DoubleSide;
-      node.material.needsUpdate = true;
+      normalizeOpaqueMaterial(node.material);
     }
   });
 }
@@ -254,8 +253,11 @@ function centerObject(root, targetSize) {
 function applyEnvironmentToObject(root, envMap) {
   root.traverse((node) => {
     if (!node.isMesh || !node.material) return;
-    node.material.envMap = envMap;
-    node.material.needsUpdate = true;
+    const materials = Array.isArray(node.material) ? node.material : [node.material];
+    materials.forEach((material) => {
+      material.envMap = envMap;
+      normalizeOpaqueMaterial(material);
+    });
   });
 }
 
@@ -266,8 +268,19 @@ function applyMaterialState(root, state) {
     materials.forEach((material) => {
       material.metalness = state.metalness;
       material.roughness = state.roughness;
-      material.side = THREE.DoubleSide;
-      material.needsUpdate = true;
+      normalizeOpaqueMaterial(material);
     });
   });
+}
+
+function normalizeOpaqueMaterial(material) {
+  material.side = THREE.DoubleSide;
+  material.transparent = false;
+  material.opacity = 1;
+  material.alphaMap = null;
+  material.alphaTest = 0;
+  material.depthWrite = true;
+  material.depthTest = true;
+  material.blending = THREE.NormalBlending;
+  material.needsUpdate = true;
 }
