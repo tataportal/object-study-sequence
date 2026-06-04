@@ -55,6 +55,8 @@ function createViewer(stage, index) {
     lastY: 0,
     metalVelocity: 0,
     roughnessVelocity: 0,
+    rotationXVelocity: 0,
+    rotationYVelocity: 0,
   };
   const state = {
     envLoaded: false,
@@ -134,6 +136,8 @@ function createViewer(stage, index) {
     modelDrag.lastY = event.clientY;
     modelDrag.metalVelocity = 0;
     modelDrag.roughnessVelocity = 0;
+    modelDrag.rotationXVelocity = 0;
+    modelDrag.rotationYVelocity = 0;
     try {
       stage.setPointerCapture(event.pointerId);
     } catch {
@@ -152,6 +156,10 @@ function createViewer(stage, index) {
     modelDrag.lastY = event.clientY;
     modelDrag.metalVelocity = dx * 0.0025;
     modelDrag.roughnessVelocity = -dy * 0.0025;
+    modelDrag.rotationYVelocity = dx * 0.006;
+    modelDrag.rotationXVelocity = dy * 0.006;
+    objectRoot.rotation.y += modelDrag.rotationYVelocity;
+    objectRoot.rotation.x += modelDrag.rotationXVelocity;
     updateMaterialState(modelDrag.metalVelocity, modelDrag.roughnessVelocity);
   }
 
@@ -172,6 +180,10 @@ function createViewer(stage, index) {
   function render() {
     if (!modelDrag.active) {
       objectRoot.rotation.y += 0.003;
+      objectRoot.rotation.y += modelDrag.rotationYVelocity;
+      objectRoot.rotation.x += modelDrag.rotationXVelocity;
+      modelDrag.rotationYVelocity *= 0.9;
+      modelDrag.rotationXVelocity *= 0.9;
       if (Math.abs(modelDrag.metalVelocity) > 0.0001 || Math.abs(modelDrag.roughnessVelocity) > 0.0001) {
         updateMaterialState(modelDrag.metalVelocity, modelDrag.roughnessVelocity);
         modelDrag.metalVelocity *= 0.9;
@@ -220,6 +232,7 @@ function prepareModel(root) {
     if (node.material) {
       node.material.envMapIntensity = 1.25;
       node.material.roughness = Math.max(node.material.roughness ?? 0.18, 0.08);
+      node.material.side = THREE.DoubleSide;
       node.material.needsUpdate = true;
     }
   });
@@ -253,6 +266,7 @@ function applyMaterialState(root, state) {
     materials.forEach((material) => {
       material.metalness = state.metalness;
       material.roughness = state.roughness;
+      material.side = THREE.DoubleSide;
       material.needsUpdate = true;
     });
   });
