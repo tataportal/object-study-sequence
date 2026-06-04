@@ -92,7 +92,7 @@ function applyPost(artwork) {
   const speed = Math.min(Math.abs(artwork.velocity) / 18, 1);
   const shift = Math.max(-5, Math.min(5, artwork.velocity * 0.18));
   artwork.card.style.setProperty("--bloom", String(0.1 + speed * 0.18));
-  artwork.card.style.setProperty("--motion-blur", `${speed * 1.2}px`);
+  artwork.card.style.setProperty("--motion-blur", "0px");
   artwork.card.style.setProperty("--motion-shift", `${shift}px`);
 }
 
