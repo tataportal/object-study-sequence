@@ -5,7 +5,8 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 const stages = [...document.querySelectorAll(".three-stage")];
 const exrUrl = "./004_Grau/piz_compressed.exr";
 const grauInitialYaw = -Math.PI / 4;
-const grauTargetSize = 88;
+const grauTargetSize = 104;
+const grauPositionX = 5;
 
 if (!stages.length) throw new Error("Missing Three.js stage element.");
 
@@ -99,6 +100,7 @@ function createViewer(stage, index) {
       prepareModel(objectRoot);
       if (isGrau) objectRoot.rotation.y = grauInitialYaw;
       centerObject(objectRoot, isGrau ? grauTargetSize : 46, isGrau);
+      if (isGrau) objectRoot.position.x += grauPositionX;
       if (exrCubeRenderTarget) applyEnvironmentToObject(objectRoot, exrCubeRenderTarget.texture);
       applyMaterialState(objectRoot, state);
       scene.add(objectRoot);
