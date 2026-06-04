@@ -12,6 +12,7 @@ window.__threeEnvmapState = [];
 stages.forEach((stage, index) => createViewer(stage, index));
 
 function createViewer(stage, index) {
+  const isGrau = stage.id === "three-stage-005";
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: false,
@@ -50,7 +51,11 @@ function createViewer(stage, index) {
   const pointerNdc = new THREE.Vector2();
   const modelDrag = {
     active: false,
+    canvasActive: false,
+    canvasCandidate: false,
     pointerId: null,
+    startX: 0,
+    startY: 0,
     lastX: 0,
     lastY: 0,
     metalVelocity: 0,
@@ -90,7 +95,7 @@ function createViewer(stage, index) {
       scene.remove(objectRoot);
       objectRoot = gltf.scene;
       prepareModel(objectRoot);
-      centerObject(objectRoot, 46);
+      centerObject(objectRoot, isGrau ? 62 : 46, isGrau);
       if (exrCubeRenderTarget) applyEnvironmentToObject(objectRoot, exrCubeRenderTarget.texture);
       applyMaterialState(objectRoot, state);
       scene.add(objectRoot);
@@ -126,12 +131,28 @@ function createViewer(stage, index) {
   }
 
   function onModelPointerDown(event) {
-    if (!pointerHitsObject(event)) return;
+    const hitsObject = pointerHitsObject(event);
+
+    if (!hitsObject && isGrau) {
+      modelDrag.canvasCandidate = true;
+      modelDrag.pointerId = event.pointerId;
+      modelDrag.startX = event.clientX;
+      modelDrag.startY = event.clientY;
+      modelDrag.lastX = event.clientX;
+      modelDrag.lastY = event.clientY;
+      return;
+    }
+
+    if (!hitsObject) return;
 
     event.preventDefault();
     event.stopPropagation();
     modelDrag.active = true;
+    modelDrag.canvasActive = false;
+    modelDrag.canvasCandidate = false;
     modelDrag.pointerId = event.pointerId;
+    modelDrag.startX = event.clientX;
+    modelDrag.startY = event.clientY;
     modelDrag.lastX = event.clientX;
     modelDrag.lastY = event.clientY;
     modelDrag.metalVelocity = 0;
@@ -146,6 +167,33 @@ function createViewer(stage, index) {
   }
 
   function onModelPointerMove(event) {
+    if (isGrau && modelDrag.canvasCandidate && modelDrag.pointerId === event.pointerId) {
+      const totalX = event.clientX - modelDrag.startX;
+      const totalY = event.clientY - modelDrag.startY;
+
+      if (!modelDrag.canvasActive && Math.hypot(totalX, totalY) > 9) {
+        if (Math.abs(totalX) > Math.abs(totalY) * 1.15) {
+          modelDrag.canvasActive = true;
+          event.preventDefault();
+          event.stopPropagation();
+        } else {
+          modelDrag.canvasCandidate = false;
+          return;
+        }
+      }
+
+      if (modelDrag.canvasActive) {
+        event.preventDefault();
+        event.stopPropagation();
+        const dx = event.clientX - modelDrag.lastX;
+        modelDrag.lastX = event.clientX;
+        modelDrag.lastY = event.clientY;
+        modelDrag.rotationYVelocity = dx * 0.008;
+        objectRoot.rotation.y += modelDrag.rotationYVelocity;
+      }
+      return;
+    }
+
     if (!modelDrag.active || modelDrag.pointerId !== event.pointerId) return;
 
     event.preventDefault();
@@ -156,14 +204,23 @@ function createViewer(stage, index) {
     modelDrag.lastY = event.clientY;
     modelDrag.metalVelocity = dx * 0.0025;
     modelDrag.roughnessVelocity = -dy * 0.0025;
-    modelDrag.rotationYVelocity = dx * 0.006;
-    modelDrag.rotationXVelocity = dy * 0.006;
-    objectRoot.rotation.y += modelDrag.rotationYVelocity;
-    objectRoot.rotation.x += modelDrag.rotationXVelocity;
+    if (!isGrau) {
+      modelDrag.rotationYVelocity = dx * 0.006;
+      modelDrag.rotationXVelocity = dy * 0.006;
+      objectRoot.rotation.y += modelDrag.rotationYVelocity;
+      objectRoot.rotation.x += modelDrag.rotationXVelocity;
+    }
     updateMaterialState(modelDrag.metalVelocity, modelDrag.roughnessVelocity);
   }
 
   function onModelPointerUp(event) {
+    if (isGrau && modelDrag.canvasCandidate && modelDrag.pointerId === event.pointerId) {
+      modelDrag.canvasActive = false;
+      modelDrag.canvasCandidate = false;
+      modelDrag.pointerId = null;
+      return;
+    }
+
     if (!modelDrag.active || modelDrag.pointerId !== event.pointerId) return;
 
     event.preventDefault();
@@ -174,12 +231,14 @@ function createViewer(stage, index) {
       // Ignore release failures for synthetic or already-cancelled pointers.
     }
     modelDrag.active = false;
+    modelDrag.canvasActive = false;
+    modelDrag.canvasCandidate = false;
     modelDrag.pointerId = null;
   }
 
   function render() {
     if (!modelDrag.active) {
-      objectRoot.rotation.y += 0.003;
+      if (!isGrau) objectRoot.rotation.y += 0.003;
       objectRoot.rotation.y += modelDrag.rotationYVelocity;
       objectRoot.rotation.x += modelDrag.rotationXVelocity;
       modelDrag.rotationYVelocity *= 0.9;
@@ -237,7 +296,7 @@ function prepareModel(root) {
   });
 }
 
-function centerObject(root, targetSize) {
+function centerObject(root, targetSize, alignBottom = false) {
   const box = new THREE.Box3().setFromObject(root);
   const center = box.getCenter(new THREE.Vector3());
   const size = box.getSize(new THREE.Vector3());
@@ -248,6 +307,13 @@ function centerObject(root, targetSize) {
   const scaledBox = new THREE.Box3().setFromObject(root);
   const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
   root.position.sub(scaledCenter);
+
+  if (alignBottom) {
+    const viewportHeight = 2 * Math.tan(THREE.MathUtils.degToRad(40 / 2)) * 120;
+    const bottomAlignedBox = new THREE.Box3().setFromObject(root);
+    const targetBottom = -viewportHeight / 2 + 4;
+    root.position.y += targetBottom - bottomAlignedBox.min.y;
+  }
 }
 
 function applyEnvironmentToObject(root, envMap) {
