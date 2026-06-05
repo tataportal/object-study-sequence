@@ -191,12 +191,12 @@ function createFallScene(canvas) {
   const ctx = canvas.getContext("2d", { alpha: false });
   const pieces = [];
   const palette = [
-    [238, 206, 214],
-    [206, 224, 239],
-    [218, 230, 205],
-    [235, 224, 190],
-    [216, 207, 236],
-    [232, 213, 198],
+    [242, 239, 226],
+    [238, 238, 232],
+    [218, 41, 28],
+    [12, 74, 166],
+    [244, 199, 36],
+    [18, 18, 18],
   ];
   const state = {
     canvas,
@@ -220,37 +220,43 @@ function createFallScene(canvas) {
     ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
   }
 
-  function addPiece(x, y, force = 1) {
-    if (pieces.length > 170) pieces.splice(0, pieces.length - 150);
+  function addPiece(x, y, force = 1, fromTop = false) {
+    const maxPieces = Math.min(760, Math.max(360, Math.floor((state.width * state.height) / 1050)));
+    if (pieces.length >= maxPieces) return;
 
-    const radius = 7 + Math.random() * 16;
+    const radius = 8 + Math.random() * 14;
     const color = palette[Math.floor(Math.random() * palette.length)];
-    const gloss = Math.random() > 0.48;
+    const blockWidth = radius * (0.9 + Math.random() * 2.4);
+    const blockHeight = radius * (0.75 + Math.random() * 2);
+    const spawnX = fromTop
+      ? Math.random() > 0.35
+        ? Math.random() * state.width
+        : x + (Math.random() - 0.5) * state.width * 0.36
+      : x + (Math.random() - 0.5) * 44;
     pieces.push({
-      x: x + (Math.random() - 0.5) * 44,
-      y: y - radius,
+      x: Math.max(radius, Math.min(state.width - radius, spawnX)),
+      y: fromTop ? -radius * 2 : y - radius,
       vx: (Math.random() - 0.5) * 4.6 * force,
       vy: (0.4 + Math.random() * 2.2) * force,
       radius,
       rotation: Math.random() * Math.PI * 2,
       spin: (Math.random() - 0.5) * 0.16,
-      sides: Math.random() > 0.62 ? 4 : Math.random() > 0.35 ? 5 : 32,
+      width: blockWidth,
+      height: blockHeight,
       color,
-      gloss,
-      shade: 0.72 + Math.random() * 0.24,
     });
   }
 
   function emit(delta) {
     if (!state.emitting) return;
 
-    state.emitCarry += delta * 0.028;
-    const count = Math.min(6, Math.floor(state.emitCarry));
+    state.emitCarry += delta * 0.045;
+    const count = Math.min(8, Math.floor(state.emitCarry));
     if (count <= 0) return;
     state.emitCarry -= count;
 
     for (let i = 0; i < count; i += 1) {
-      addPiece(state.pressX || state.width / 2, state.pressY || state.height * 0.28, 1.1);
+      addPiece(state.pressX || state.width / 2, state.pressY || state.height * 0.28, 1.1, true);
     }
   }
 
@@ -323,50 +329,11 @@ function createFallScene(canvas) {
     ctx.rotate(piece.rotation);
 
     const [red, green, blue] = piece.color;
-    if (piece.gloss) {
-      const gradient = ctx.createRadialGradient(
-        -piece.radius * 0.38,
-        -piece.radius * 0.44,
-        piece.radius * 0.08,
-        0,
-        0,
-        piece.radius * 1.28,
-      );
-      gradient.addColorStop(0, `rgba(255, 255, 255, ${piece.shade})`);
-      gradient.addColorStop(0.34, `rgba(${red + 10}, ${green + 10}, ${blue + 10}, 0.94)`);
-      gradient.addColorStop(1, `rgba(${red * 0.48}, ${green * 0.48}, ${blue * 0.48}, 0.96)`);
-      ctx.fillStyle = gradient;
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.32)";
-    } else {
-      ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, 0.88)`;
-      ctx.strokeStyle = `rgba(${red * 0.72}, ${green * 0.72}, ${blue * 0.72}, 0.8)`;
-    }
-    ctx.lineWidth = 1;
-
-    ctx.beginPath();
-    if (piece.sides === 32) {
-      ctx.ellipse(0, 0, piece.radius * 1.1, piece.radius * 0.78, 0, 0, Math.PI * 2);
-    } else {
-      for (let i = 0; i < piece.sides; i += 1) {
-        const angle = (i / piece.sides) * Math.PI * 2;
-        const variance = i % 2 === 0 ? 1 : 0.74;
-        const x = Math.cos(angle) * piece.radius * variance;
-        const y = Math.sin(angle) * piece.radius * variance;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-    }
-    ctx.fill();
-    ctx.stroke();
-
-    if (piece.gloss) {
-      ctx.globalAlpha = 0.5;
-      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
-      ctx.beginPath();
-      ctx.ellipse(-piece.radius * 0.34, -piece.radius * 0.4, piece.radius * 0.22, piece.radius * 0.1, -0.55, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
+    ctx.strokeStyle = "#050505";
+    ctx.lineWidth = Math.max(2, Math.min(5, piece.radius * 0.24));
+    ctx.fillRect(-piece.width / 2, -piece.height / 2, piece.width, piece.height);
+    ctx.strokeRect(-piece.width / 2, -piece.height / 2, piece.width, piece.height);
     ctx.restore();
   }
 
@@ -391,7 +358,7 @@ function createFallScene(canvas) {
       state.pressX = x;
       state.pressY = y;
       state.emitCarry = 2;
-      for (let i = 0; i < 4; i += 1) addPiece(x, y, 1.1);
+      for (let i = 0; i < 8; i += 1) addPiece(x, y, 1.1, true);
     },
     move(x, y) {
       state.pressX = x;
