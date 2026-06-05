@@ -221,10 +221,10 @@ function createFallScene(canvas) {
   }
 
   function addPiece(x, y, force = 1, fromTop = false) {
-    const maxPieces = Math.min(760, Math.max(360, Math.floor((state.width * state.height) / 1050)));
+    const maxPieces = Math.min(420, Math.max(260, Math.floor((state.width * state.height) / 1500)));
     if (pieces.length >= maxPieces) return;
 
-    const radius = 8 + Math.random() * 14;
+    const radius = 7 + Math.random() * 11;
     const color = palette[Math.floor(Math.random() * palette.length)];
     const blockWidth = radius * (0.9 + Math.random() * 2.4);
     const blockHeight = radius * (0.75 + Math.random() * 2);
@@ -239,8 +239,6 @@ function createFallScene(canvas) {
       vx: (Math.random() - 0.5) * 4.6 * force,
       vy: (0.4 + Math.random() * 2.2) * force,
       radius,
-      rotation: Math.random() * Math.PI * 2,
-      spin: (Math.random() - 0.5) * 0.16,
       width: blockWidth,
       height: blockHeight,
       color,
@@ -267,33 +265,51 @@ function createFallScene(canvas) {
         const b = pieces[j];
         const dx = b.x - a.x;
         const dy = b.y - a.y;
-        const distance = Math.hypot(dx, dy) || 1;
-        const minDistance = a.radius + b.radius;
-        if (distance >= minDistance) continue;
+        const overlapX = (a.width + b.width) / 2 - Math.abs(dx);
+        const overlapY = (a.height + b.height) / 2 - Math.abs(dy);
+        if (overlapX <= 0 || overlapY <= 0) continue;
 
-        const nx = dx / distance;
-        const ny = dy / distance;
-        const overlap = (minDistance - distance) * 0.5;
-        a.x -= nx * overlap;
-        a.y -= ny * overlap;
-        b.x += nx * overlap;
-        b.y += ny * overlap;
-
-        const relativeVelocity = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-        if (relativeVelocity > 0) continue;
-
-        const impulse = relativeVelocity * -0.42;
-        a.vx -= impulse * nx;
-        a.vy -= impulse * ny;
-        b.vx += impulse * nx;
-        b.vy += impulse * ny;
+        if (overlapX < overlapY) {
+          const direction = dx < 0 ? -1 : 1;
+          a.x -= (overlapX / 2) * direction;
+          b.x += (overlapX / 2) * direction;
+          const bounce = (b.vx - a.vx) * 0.18;
+          a.vx += bounce;
+          b.vx -= bounce;
+        } else {
+          const direction = dy < 0 ? -1 : 1;
+          a.y -= (overlapY / 2) * direction;
+          b.y += (overlapY / 2) * direction;
+          const bounce = (b.vy - a.vy) * 0.18;
+          a.vy += bounce;
+          b.vy -= bounce;
+        }
       }
+    }
+  }
+
+  function resolveBounds(piece) {
+    const halfWidth = piece.width / 2;
+    const halfHeight = piece.height / 2;
+    const floor = state.height - 2;
+
+    if (piece.x < halfWidth) {
+      piece.x = halfWidth;
+      piece.vx *= -0.48;
+    } else if (piece.x > state.width - halfWidth) {
+      piece.x = state.width - halfWidth;
+      piece.vx *= -0.48;
+    }
+
+    if (piece.y > floor - halfHeight) {
+      piece.y = floor - halfHeight;
+      piece.vy *= -0.34;
+      piece.vx *= 0.82;
     }
   }
 
   function step(delta) {
     const gravity = 0.00145 * delta;
-    const floor = state.height - 2;
 
     emit(delta);
 
@@ -302,31 +318,18 @@ function createFallScene(canvas) {
       piece.vx *= 0.998;
       piece.x += piece.vx * delta * 0.06;
       piece.y += piece.vy * delta * 0.06;
-      piece.rotation += piece.spin * delta * 0.03;
-
-      if (piece.x < piece.radius) {
-        piece.x = piece.radius;
-        piece.vx *= -0.62;
-      } else if (piece.x > state.width - piece.radius) {
-        piece.x = state.width - piece.radius;
-        piece.vx *= -0.62;
-      }
-
-      if (piece.y > floor - piece.radius) {
-        piece.y = floor - piece.radius;
-        piece.vy *= -0.48;
-        piece.vx *= 0.9;
-        piece.spin *= 0.86;
-      }
+      resolveBounds(piece);
     });
 
-    collidePieces();
+    for (let i = 0; i < 4; i += 1) {
+      collidePieces();
+      pieces.forEach(resolveBounds);
+    }
   }
 
   function drawPiece(piece) {
     ctx.save();
     ctx.translate(piece.x, piece.y);
-    ctx.rotate(piece.rotation);
 
     const [red, green, blue] = piece.color;
     ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
