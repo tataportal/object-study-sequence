@@ -221,10 +221,10 @@ function createFallScene(canvas) {
   }
 
   function addPiece(x, y, force = 1) {
-    const maxPieces = Math.min(780, Math.max(420, Math.floor((state.width * state.height) / 640)));
+    const maxPieces = Math.min(620, Math.max(360, Math.floor((state.width * state.height) / 900)));
     if (pieces.length >= maxPieces) return;
 
-    const radius = 10 + Math.random() * 20;
+    const radius = 7 + Math.random() * 11;
     const color = palette[Math.floor(Math.random() * palette.length)];
     const blockWidth = radius * (0.9 + Math.random() * 2.4) * 2;
     const blockHeight = radius * (0.75 + Math.random() * 2) * 2;
@@ -247,8 +247,8 @@ function createFallScene(canvas) {
   function emit(delta) {
     if (!state.emitting) return;
 
-    state.emitCarry += delta * 0.09;
-    const count = Math.min(18, Math.floor(state.emitCarry));
+    state.emitCarry += delta * 0.065;
+    const count = Math.min(12, Math.floor(state.emitCarry));
     if (count <= 0) return;
     state.emitCarry -= count;
 
@@ -360,7 +360,7 @@ function createFallScene(canvas) {
       state.pressX = x;
       state.pressY = y;
       state.emitCarry = 2;
-      for (let i = 0; i < 18; i += 1) addPiece(x, y, 1.1);
+      for (let i = 0; i < 10; i += 1) addPiece(x, y, 1.1);
     },
     move(x, y) {
       state.pressX = x;
