@@ -220,22 +220,21 @@ function createFallScene(canvas) {
     ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
   }
 
-  function addPiece(x, y, force = 1, fromTop = false) {
-    const maxPieces = Math.min(420, Math.max(260, Math.floor((state.width * state.height) / 1500)));
+  function addPiece(x, y, force = 1) {
+    const maxPieces = Math.min(780, Math.max(420, Math.floor((state.width * state.height) / 640)));
     if (pieces.length >= maxPieces) return;
 
-    const radius = 7 + Math.random() * 11;
+    const radius = 10 + Math.random() * 20;
     const color = palette[Math.floor(Math.random() * palette.length)];
-    const blockWidth = radius * (0.9 + Math.random() * 2.4);
-    const blockHeight = radius * (0.75 + Math.random() * 2);
-    const spawnX = fromTop
-      ? Math.random() > 0.35
-        ? Math.random() * state.width
-        : x + (Math.random() - 0.5) * state.width * 0.36
-      : x + (Math.random() - 0.5) * 44;
+    const blockWidth = radius * (0.9 + Math.random() * 2.4) * 2;
+    const blockHeight = radius * (0.75 + Math.random() * 2) * 2;
+    const halfWidth = blockWidth / 2;
+    const halfHeight = blockHeight / 2;
+    const spawnX = x + (Math.random() - 0.5) * 54;
+    const spawnY = y + (Math.random() - 0.5) * 22;
     pieces.push({
-      x: Math.max(radius, Math.min(state.width - radius, spawnX)),
-      y: fromTop ? -radius * 2 : y - radius,
+      x: Math.max(halfWidth, Math.min(state.width - halfWidth, spawnX)),
+      y: Math.max(-halfHeight, Math.min(state.height - halfHeight, spawnY - halfHeight)),
       vx: (Math.random() - 0.5) * 4.6 * force,
       vy: (0.4 + Math.random() * 2.2) * force,
       radius,
@@ -248,13 +247,13 @@ function createFallScene(canvas) {
   function emit(delta) {
     if (!state.emitting) return;
 
-    state.emitCarry += delta * 0.045;
-    const count = Math.min(8, Math.floor(state.emitCarry));
+    state.emitCarry += delta * 0.09;
+    const count = Math.min(18, Math.floor(state.emitCarry));
     if (count <= 0) return;
     state.emitCarry -= count;
 
     for (let i = 0; i < count; i += 1) {
-      addPiece(state.pressX || state.width / 2, state.pressY || state.height * 0.28, 1.1, true);
+      addPiece(state.pressX || state.width / 2, state.pressY || state.height * 0.28, 1.1);
     }
   }
 
@@ -273,16 +272,16 @@ function createFallScene(canvas) {
           const direction = dx < 0 ? -1 : 1;
           a.x -= (overlapX / 2) * direction;
           b.x += (overlapX / 2) * direction;
-          const bounce = (b.vx - a.vx) * 0.18;
-          a.vx += bounce;
-          b.vx -= bounce;
+          a.vx *= 0.72;
+          b.vx *= 0.72;
         } else {
           const direction = dy < 0 ? -1 : 1;
           a.y -= (overlapY / 2) * direction;
           b.y += (overlapY / 2) * direction;
-          const bounce = (b.vy - a.vy) * 0.18;
-          a.vy += bounce;
-          b.vy -= bounce;
+          a.vy *= 0.18;
+          b.vy *= 0.18;
+          a.vx *= 0.9;
+          b.vx *= 0.9;
         }
       }
     }
@@ -295,16 +294,16 @@ function createFallScene(canvas) {
 
     if (piece.x < halfWidth) {
       piece.x = halfWidth;
-      piece.vx *= -0.48;
+      piece.vx *= -0.18;
     } else if (piece.x > state.width - halfWidth) {
       piece.x = state.width - halfWidth;
-      piece.vx *= -0.48;
+      piece.vx *= -0.18;
     }
 
     if (piece.y > floor - halfHeight) {
       piece.y = floor - halfHeight;
-      piece.vy *= -0.34;
-      piece.vx *= 0.82;
+      piece.vy = 0;
+      piece.vx *= 0.74;
     }
   }
 
@@ -361,7 +360,7 @@ function createFallScene(canvas) {
       state.pressX = x;
       state.pressY = y;
       state.emitCarry = 2;
-      for (let i = 0; i < 8; i += 1) addPiece(x, y, 1.1, true);
+      for (let i = 0; i < 18; i += 1) addPiece(x, y, 1.1);
     },
     move(x, y) {
       state.pressX = x;
