@@ -21,7 +21,7 @@ const artworks = [...document.querySelectorAll(".artwork")].map((node, index) =>
   card: node.querySelector(".art-card"),
   image: node.querySelector(".sequence-frame"),
   glow: node.querySelector(".sequence-glow"),
-  sequence: index in sequences ? sequences[index] : sequences[0],
+  sequence: sequences[index] ?? null,
   frame: 0,
   velocity: 0,
 }));
